@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: producer
+  namespace: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: producer
+  template:
+    metadata:
+      labels:
+        app: producer
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: worker-stateless
+      containers:
+      - name: producer
+        image: redis:8.0-alpine
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        command:
+            - /bin/sh
+            - -c
+            - |
+              i=1
+              while true; do
+                message="message-$i"
+                echo "Producing: $message"
+                redis-cli -h redis-service LPUSH messages "$message"
+                i=$((i+1))
+                sleep 5
+              done
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer
+  namespace: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer
+  template:
+    metadata:
+      labels:
+        app: consumer
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: worker-stateless
+      containers:
+        - name: consumer
+          image: redis:8.0-alpine
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              while true; do
+                result=$(redis-cli -h redis-service BRPOP messages 0)
+                echo "Consumed: $result"
+              done
