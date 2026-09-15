@@ -110,7 +110,7 @@ NAME                                     STATUS   VOLUME              CAPACITY  
 redis-data-redis-0-redis-0               Bound    pvc-c48882db-...    1Gi        RWO            longhorn-recovery 4m
 ```
 
-Note which node `redis-0` landed on — it should be **`worker-stateful`** (the node we will kill). If it scheduled elsewhere, drain/pin it before continuing. Also you could run simultaneously the step 0 for work node creation in each own terminal tab.
+Note which node `redis-0` landed on — it should be **`worker-stateful`** (the node we will kill). If it scheduled elsewhere, drain/pin it before continuing. If k8s schedules it onto different node, you could open separate terminal tabs to run the step 0 worker node creation tasks simultaneously or run a nodeSelector/affinity pin to force it onto worker-stateful.
 
 ---
 
