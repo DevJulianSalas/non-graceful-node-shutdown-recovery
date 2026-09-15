@@ -1,4 +1,4 @@
-# K8s Non-Graceful Node Shutdown Recovery — Redis on Longhorn
+# Non-Graceful Node Shutdown Recovery — Redis on Longhorn
 
 ## 🏗️ Architecture & The "Why"
 
