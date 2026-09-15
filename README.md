@@ -110,7 +110,7 @@ NAME                                     STATUS   VOLUME              CAPACITY  
 redis-data-redis-0-redis-0               Bound    pvc-c48882db-...    1Gi        RWO            longhorn-recovery 4m
 ```
 
-Note which node `redis-0` landed on — it should be **`worker-stateful`** (the node we will kill). If it scheduled elsewhere, drain/pin it before continuing.
+Note which node `redis-0` landed on — it should be **`worker-stateful`** (the node we will kill). If it scheduled elsewhere, drain/pin it before continuing. Also you could run simultaneously the step 0 for work node creation in each own terminal tab.
 
 ---
 
@@ -207,7 +207,9 @@ The `VolumeAttachment` is still `attached: true` on the dead node — the schedu
 
 ### Step 5 — Apply the `out-of-service` taint and recover
 
-Once you have confirmed the node is genuinely dead (not a transient network blip), tell the control plane the node is permanently out of service. This forcefully deletes the pod and detaches the volume:
+> ⚠️ **Verify the node is really dead first — data corruption risk.** `NotReady` does **not** mean the node stopped working. A node can be `NotReady` while it is still fully running its workload (e.g., a network partition that prevents it from reporting health to the control plane but leaves the kubelet, redis, and its writes to the block device alive). Applying the `out-of-service` taint on such a node forcefully detaches the volume and starts `redis-0` on another node — and **two processes writing to the same block volume will corrupt the data**. Only apply the taint after you have confirmed, out-of-band, that the node is truly powered off and no processes are writing to the storage (console access, ping, VM state, `poweroff -f` as we did above). This is exactly why the taint is the last step of the procedure, not the first.
+
+Tell the control plane the node is permanently out of service. This forcefully deletes the pod and detaches the volume:
 
 ```bash
 kubectl taint node worker-stateful node.kubernetes.io/out-of-service=nodeshutdown:NoExecute
