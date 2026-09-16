@@ -186,7 +186,7 @@ multipass exec worker-stateful -- sudo poweroff -f
 
 ### Step 4 — Observe the "stuck" state
 
-The node goes `NotReady` (may take ~180s for the node lease to expire), and the StatefulSet pod gets stuck in `Terminating`:
+The node goes `NotReady` after ~40–50s of missed heartbeats (default `--node-monitor-grace-period`), and the StatefulSet pod gets stuck in `Terminating`. It stays there: pods have a built-in 5-minute toleration for the `not-ready`/`unreachable` taints, and without the taint K8s will only force-detach the volume after ~6 minutes of failed pod deletion — so recovery is slow at best, impossible to schedule at worst:
 
 ```bash
 kubectl get nodes
@@ -287,7 +287,7 @@ kubectl taint node worker-stateful node.kubernetes.io/out-of-service:NoExecute-
 kubectl exec -n cache redis-0 -- redis-cli GET node-failure-test
 ```
 
-The redo loop is: taint → `poweroff -f` → watch it get stuck → re-apply taint if the node restarted → recover → verify `GET` → restart node → remove taint.
+The redo loop is: `poweroff -f` → confirm the node is really down → taint → watch recovery → verify `GET` → power the VM back on → wait `Ready` → remove the taint → repeat.
 
 ---
 
